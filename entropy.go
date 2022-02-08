@@ -6,15 +6,30 @@ import (
 
 // An entropyWorker calculates the entropy of words for a given list of hints.
 type entropyWorker struct {
+	jobs      <-chan entropyWorkJob
 	result    chan<- entropyWorkResult
 	workerNum int
 	hints     []wordHint
+}
+
+type entropyWorkJob struct {
+	word       string
+	dictionary []string
 }
 
 // An entropyWorkResult is the result of an entropy calculation by an entropyWorker.
 type entropyWorkResult struct {
 	workerNum int
 	entropy   float64
+}
+
+func (e entropyWorker) work() {
+	for {
+		select {
+		case job := <-e.jobs:
+			e.calculateEntropy(job.word, job.dictionary)
+		}
+	}
 }
 
 // calculateEntropy calculates the entropy for the given word in the context of a dictionary of possible words using the hints configured for this worker.
@@ -77,7 +92,7 @@ func (e entropyWorker) calculateEntropy(word string, dictionary []string) {
 type entropyWorkerPool struct {
 	numWorkers int
 
-	workers []entropyWorker
+	workers []chan entropyWorkJob
 	results chan entropyWorkResult
 	done    chan bool
 }
@@ -86,7 +101,7 @@ type entropyWorkerPool struct {
 func newEntropyWorkerPool(numWorkers int) entropyWorkerPool {
 	wp := entropyWorkerPool{
 		numWorkers: numWorkers,
-		workers:    make([]entropyWorker, numWorkers),
+		workers:    make([]chan entropyWorkJob, numWorkers),
 		results:    make(chan entropyWorkResult, numWorkers),
 		done:       make(chan bool),
 	}
@@ -100,11 +115,17 @@ func newEntropyWorkerPool(numWorkers int) entropyWorkerPool {
 			stopHint = numPossibleWordHints
 		}
 
-		wp.workers[workerNum] = entropyWorker{
+		jobChan := make(chan entropyWorkJob)
+		wp.workers[workerNum] = jobChan
+
+		worker := entropyWorker{
+			jobs:      jobChan,
 			result:    wp.results,
 			workerNum: workerNum,
 			hints:     possibleWordHints[startHint:stopHint],
 		}
+
+		go worker.work()
 	}
 
 	return wp
@@ -140,7 +161,10 @@ func (e entropyWorkerPool) collectWorkerResults() float64 {
 func (e entropyWorkerPool) calculateEntropy(word string, dictionary []string) float64 {
 	// start workers
 	for _, worker := range e.workers {
-		go worker.calculateEntropy(word, dictionary)
+		worker <- entropyWorkJob{
+			word:       word,
+			dictionary: dictionary,
+		}
 	}
 
 	return e.collectWorkerResults()
