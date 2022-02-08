@@ -22,7 +22,7 @@ type player interface {
 func NewGame() *Game {
 	return &Game{
 		dictionary: ValidWords,
-		p:          humanPlayer{},
+		p:          &humanPlayer{},
 	}
 }
 
@@ -48,10 +48,9 @@ func NewGameWithAnswer(answer string) *Game {
 //
 // At each step, the best guess is chosen given the information revealed so far. See Game.getBestGuess for details.
 func (g *Game) Play() (string, int) {
-	guessCount := 0
+	guessCount := 1
 
 	for len(g.dictionary) != 1 {
-		guessCount++
 
 		if Verbose {
 			fmt.Printf("(Guess #%v) Calculating best guess...\n", guessCount)
@@ -84,9 +83,12 @@ func (g *Game) Play() (string, int) {
 		}
 
 		if len(g.dictionary) == 0 {
-			panic("That guess resulted in the dictionary being empty - no answer could be found. If the answer is unknown, make sure the guess/hint were typed correctly." +
+			panic("That guess resulted in the dictionary being empty - no answer could be found. " +
+				"If the answer is unknown, make sure the guess/hint were typed correctly. " +
 				"If they were, or the answer is known, there's a bug somewhere.")
 		}
+
+		guessCount++
 	}
 
 	fmt.Println("Answer: ", g.dictionary[0])
