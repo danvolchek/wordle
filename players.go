@@ -10,9 +10,11 @@ import (
 // A humanPlayer plays a Game by:
 // - manually typing the best guess into the game (shown through stdout)
 // - entering the resulting hint through stdin
-type humanPlayer struct{}
+type humanPlayer struct {
+	guessAsHint *wordHint
+}
 
-func (h humanPlayer) getGuess(bestGuess string) string {
+func (h *humanPlayer) getGuess(bestGuess string) string {
 	if !Verbose {
 		fmt.Println("Best guess:", bestGuess)
 	}
@@ -20,6 +22,7 @@ func (h humanPlayer) getGuess(bestGuess string) string {
 	for {
 		result := readLine("Guess")
 		if len(result) == 0 {
+			fmt.Println("Used best guess")
 			return bestGuess
 		}
 
@@ -30,16 +33,25 @@ func (h humanPlayer) getGuess(bestGuess string) string {
 
 		var hint wordHint
 		if hint.fromString(result) == nil {
-			fmt.Println("Bad guess: that looks like a hint, not a guess")
-			continue
+			h.guessAsHint = &hint
+			fmt.Println("Used best guess")
+			return bestGuess
 		}
 
 		return result
 	}
 }
 
-func (h humanPlayer) getHint(guess string) wordHint {
+func (h *humanPlayer) getHint(guess string) wordHint {
 	var hint wordHint
+
+	if h.guessAsHint != nil {
+		fmt.Println("Used guess as hint")
+		hint = *h.guessAsHint
+		h.guessAsHint = nil
+		return hint
+	}
+
 	for {
 		result := readLine("Hint")
 
