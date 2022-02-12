@@ -1,5 +1,4 @@
-// Package wordle provides a Wordle solver. It can be used both when the answer is unknown (see NewGame) and
-// when the answer is known (see NewGameWithAnswer).
+// Package wordle provides a Wordle solver. See NewGame.
 package wordle
 
 const (

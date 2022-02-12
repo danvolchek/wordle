@@ -16,25 +16,28 @@ type player interface {
 	getHint(guess string) wordHint
 }
 
-// NewGame creates a new game where the answer is unknown. A human is needed to type guesses into the Wordle game, and feed hints back into this program. Useful for playing real Wordles.
-//
-// In this mode, the solver offers what it thinks the best guess is, and you can choose to either follow that advice or use a different word.
-func NewGame() *Game {
-	return &Game{
-		dictionary: ValidWords,
-		p:          &humanPlayer{},
-	}
+// GameOptions provides configuration options for playing wordle games.
+type GameOptions struct {
+	// If the answer is unknown:
+	//  - A human is needed to type guesses into the Wordle game, and feed hints back into this program. Useful for playing real Wordles.
+	//  - In this mode, the solver offers what it thinks the best guess is, and you can choose to either follow that advice or use a different word.
+	//
+	// Otherwise:
+	//  - Hints are self-calculated because the answer is known. Useful for seeing how the solver reacts to certain answers.
+	//  - In this mode, the solver always chooses the best guess.
+	Answer string
 }
 
-// NewGameWithAnswer creates a new game where the answer is already known. Hints are self-calculated because the answer is known. Useful for seeing how the solver reacts to certain answers.
-//
-// In this mode, the solver always chooses the best guess.
-func NewGameWithAnswer(answer string) *Game {
+// NewGame creates a new game of Wordle. See GameOptions for game configuration. The solver solves using hard-mode rules.
+func NewGame(options GameOptions) *Game {
+	var p player = &humanPlayer{}
+	if options.Answer != "" {
+		p = computerPlayer{answer: options.Answer}
+	}
+
 	return &Game{
 		dictionary: ValidWords,
-		p: computerPlayer{
-			answer: answer,
-		},
+		p:          p,
 	}
 }
 

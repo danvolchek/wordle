@@ -14,10 +14,10 @@ const (
 
 func main() {
 	if unknownWord {
-		wordle.NewGame().Play()
+		wordle.NewGame(wordle.GameOptions{}).Play()
 	} else {
 		rand.Seed(time.Now().Unix())
 		randomWord := rand.Intn(2315)
-		wordle.NewGameWithAnswer(wordle.ValidWords[randomWord]).Play()
+		wordle.NewGame(wordle.GameOptions{Answer: wordle.ValidWords[randomWord]}).Play()
 	}
 }
